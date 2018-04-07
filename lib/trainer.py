@@ -16,11 +16,14 @@ class Trainer:
         self.tgt_vocab = train_dataloader.dataset.tgt_vocab
 
         # set model
-        encoder = models.Encoder(self.src_vocab, args)
+        encoder = models.Encoder(self.src_vocab, self.args)
+        decoder = models.Decoder(self.tgt_vocab, self.args)
         if args.use_cuda:
             self.encoder = encoder.cuda()
+            self.decoder = decoder.cuda()
         else:
             self.encoder = encoder
+            self.decoder = decoder
         # set optimizer
         # set criteria
 
@@ -46,8 +49,17 @@ class Trainer:
 
             src_sents = Variable(torch.LongTensor(src_sents))
             tgt_sents = Variable(torch.LongTensor(tgt_sents))
+            batch_size, tgt_len = tgt_sents.size()
+            start_decode =\
+                Variable(torch.LongTensor([[self.tgt_vocab.w2i['<s>']] *
+                                          batch_size])).transpose(0, 1)
             if args.use_cuda:
                 src_sents = src_sents.cuda()
                 tgt_sents = tgt_sents.cuda()
+                start_decode = start_decode.cuda()
 
-            self.encoder(src_sents, src_lens)
+            output, hidden_c = self.encoder(src_sents, src_lens)
+            preds = self.decoder(start_decode,
+                                 hidden_c,
+                                 tgt_len,
+                                 output)

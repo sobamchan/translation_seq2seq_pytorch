@@ -11,11 +11,12 @@ class Args:
         self.batch_size = 32
         self.encoder_hidden_n = 512
         self.encoder_layers_n = 3
-        self.embedding_dim = 300
+        self.encoder_embedding_dim = 300
         self.encoder_bidirec = True
         self.decoder_hidden_n = 512
         self.decoder_layers_n = 3
-        self.dropput_p = 0.1
+        self.decoder_embedding_dim = 512
+        self.dropout_p = 0.1
         self.use_cuda = True
         self.gpu_id = 2
 
