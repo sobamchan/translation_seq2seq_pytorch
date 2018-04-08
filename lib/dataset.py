@@ -21,7 +21,11 @@ class Dataset(data.DataLoader):
 
     def __getitem__(self, idx):
         src = self.src_sents[idx]
+        src = src + ' ' + '</s>'
+
         tgt = self.tgt_sents[idx]
+        tgt = tgt + ' ' + '</s>'
+
         dict_ = {'src': src,
                  'tgt': tgt}
         return dict_

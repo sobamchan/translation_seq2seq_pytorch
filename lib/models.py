@@ -103,7 +103,7 @@ class Decoder(nn.Module):
         energies = energies.view(batch_size, max_len, -1)
         attention_energies = energies.bmm(hidden).squeeze(2)
 
-        alpha = F.softmax(attention_energies)
+        alpha = F.softmax(attention_energies, dim=1)
         alpha = alpha.unsqueeze(1)
         context = alpha.bmm(encoder_outputs)
         return context, alpha
@@ -122,7 +122,7 @@ class Decoder(nn.Module):
                                  context.transpose(0, 1)),
                                  2)
             score = self.linear(concated.squeeze(0))
-            softmaxed = F.log_softmax(score)
+            softmaxed = F.log_softmax(score, dim=1)
             decoded = softmaxed.max(1)[1]
             embedded = self.embedding(decoded).unsqueeze(1)
             if self.training:
