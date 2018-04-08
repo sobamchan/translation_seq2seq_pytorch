@@ -44,3 +44,10 @@ class Vocabulary:
             wid = w2i[w] if w in vocab else w2i['<UNK>']
             encoded_words.append(wid)
         return encoded_words, words
+
+    def decode(self, ids):
+        i2w = self.i2w
+        words = []
+        for i in ids:
+            words.append(i2w[i])
+        return ' '.join(words)
