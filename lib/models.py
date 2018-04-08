@@ -74,6 +74,7 @@ class Decoder(nn.Module):
         self.embedding = nn.Embedding(len(vocab), self.embedding_dim)
         self.dropout = nn.Dropout(args.dropout_p)
         self.gru = nn.GRU(self.embedding_dim + self.hidden_n,
+                          self.hidden_n,
                           self.layers_n,
                           batch_first=True)
         self.linear = nn.Linear(self.hidden_n * 2, len(vocab))
@@ -126,7 +127,7 @@ class Decoder(nn.Module):
             embedded = self.embedding(decoded).unsqueeze(1)
             if self.training:
                 embedded = self.dropout(embedded)
-            context, alpha = self.attention(hidden, encoder_outputs)
+            context, alpha = self.calc_attention(hidden, encoder_outputs)
             decode.append(softmaxed)
             del softmaxed
 

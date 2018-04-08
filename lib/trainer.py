@@ -1,5 +1,9 @@
+import numpy as np
 import torch
 from torch.autograd import Variable
+import torch.nn as nn
+import torch.optim as optim
+from tqdm import tqdm
 from lib import dataset
 from lib import utils
 from lib import models
@@ -24,16 +28,20 @@ class Trainer:
         else:
             self.encoder = encoder
             self.decoder = decoder
-        # set optimizer
-        # set criteria
+        self.encoder_optim = optim.Adam(self.encoder.parameters(), lr=args.lr)
+        self.decoder_optim = optim.Adam(self.decoder.parameters(), lr=args.lr)
+        self.criteria = nn.CrossEntropyLoss(ignore_index=0)
 
     def train_one_epoch(self, i_epoch):
+        self.encoder.train()
+        self.decoder.train()
         args = self.args
         self.encoder.train()
         self.encoder.zero_grad()
-        # losses = []
+        losses = []
 
-        for i, dict_ in enumerate(self.train_dataloader):
+        total = int(len(self.train_dataloader.dataset) / args.batch_size)
+        for i, dict_ in tqdm(enumerate(self.train_dataloader), total=total):
             src_sents = dict_['src']
             src_sents = [self.src_vocab.encode(src_sent)[0]
                          for src_sent in src_sents]
@@ -63,3 +71,10 @@ class Trainer:
                                  hidden_c,
                                  tgt_len,
                                  output)
+            loss = self.criteria(preds, tgt_sents.view(-1))
+            losses.append(loss.data[0])
+            loss.backward()
+            self.encoder_optim.step()
+            self.decoder_optim.step()
+
+        return np.mean(losses)

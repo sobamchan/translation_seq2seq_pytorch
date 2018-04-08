@@ -29,8 +29,8 @@ class Dataset(data.DataLoader):
 
 def get_dataloader(args):
     src_sents, tgt_sents = SmallParallelEnJa(args, train=True).load_dataset()
-    src_vocab = Vocabulary(src_sents, args)
-    tgt_vocab = Vocabulary(tgt_sents, args)
+    src_vocab = Vocabulary(src_sents, args, args.src_vocab_size)
+    tgt_vocab = Vocabulary(tgt_sents, args, args.tgt_vocab_size)
     train_dataset = Dataset(src_sents,
                             tgt_sents,
                             args,

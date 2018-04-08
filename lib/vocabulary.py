@@ -3,12 +3,9 @@ from collections import Counter
 
 class Vocabulary:
 
-    def __init__(self, sents, args):
+    def __init__(self, sents, args, vocab_size):
         self.sents = sents
-        if hasattr(args, 'vocab_size'):
-            self.vocab_size = args.vocab_size
-        else:
-            self.vocab_size = False
+        self.vocab_size = vocab_size
 
         vocab, w2i, i2w = self.build_vocab()
         self.vocab = vocab
