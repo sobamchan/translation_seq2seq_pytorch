@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+from torch import LongTensor
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 
@@ -66,7 +67,7 @@ class Decoder(nn.Module):
     def __init__(self, vocab, args):
         super(Decoder, self).__init__()
         self.args = args
-        self.hidden_n = args.decoder_hidden_n
+        self.hidden_n = args.decoder_hidden_n * 2
         self.layers_n = args.decoder_layers_n
         self.embedding_dim = args.decoder_embedding_dim
         self.vocab = vocab
@@ -133,3 +134,33 @@ class Decoder(nn.Module):
 
         scores = torch.cat(decode, 1)
         return scores.view(inputs.size(0) * max_len, -1)
+
+    def decode(self, context, encoder_outputs, w2i):
+        start_decode = Variable(LongTensor([[w2i['<s>']] * 1])) \
+            .transpose(0, 1)
+        if self.args.use_cuda:
+            start_decode = start_decode.cuda()
+        embedded = self.embedding(start_decode)
+        hidden = self.init_hidden(start_decode)
+
+        decodes = []
+        attentions = []
+        decoded = embedded
+        for _ in range(50):
+            # if decoded.data.tolist()[0] == w2i['</s>']:
+            #     break
+            _, hidden = self.gru(torch.cat((embedded,
+                                            context), 2),
+                                 hidden)  # h_t = f(h_{t-1}, y_{t-1}, c)
+            concated = torch.cat((hidden[-1].unsqueeze(0),
+                                 context.transpose(0, 1)),
+                                 2)
+            score = self.linear(concated.squeeze(0))
+            softmaxed = F.log_softmax(score)
+            decodes.append(softmaxed)
+            decoded = softmaxed.max(1)[1]
+            embedded = self.embedding(decoded).unsqueeze(1)
+            context, alpha = self.calc_attention(hidden, encoder_outputs)
+            attentions.append(alpha.squeeze(1))
+
+        return torch.cat(decodes).max(1)[1], torch.cat(attentions)

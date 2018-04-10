@@ -1,3 +1,5 @@
+from nltk.translate.bleu_score import sentence_bleu
+from nltk.translate.bleu_score import SmoothingFunction
 
 
 def pad_to_batch(src_sents, tgt_sents, src_pad_idx, tgt_pad_idx):
@@ -31,3 +33,9 @@ def pad_to_batch(src_sents, tgt_sents, src_pad_idx, tgt_pad_idx):
             tgt_p.append(tgt_sents[i])
 
     return src_p, src_lens, tgt_p, tgt_lens
+
+
+def calc_bleu(ref, pred):
+    sf = SmoothingFunction().method4
+    ref = [ref]
+    return sentence_bleu(ref, pred, smoothing_function=sf)
