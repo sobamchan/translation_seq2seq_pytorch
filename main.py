@@ -65,3 +65,5 @@ if __name__ == '__main__':
     for i_epoch in range(1, args.epoch + 1):
         loss = trainer.train_one_epoch(i_epoch)
         print('%d th epoch: loss -> %f' % (i_epoch, loss))
+
+        trainer.test()

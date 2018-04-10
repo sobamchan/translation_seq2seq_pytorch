@@ -49,5 +49,6 @@ class Vocabulary:
         i2w = self.i2w
         words = []
         for i in ids:
-            words.append(i2w[i])
+            if i not in [self.w2i['<s>'], self.w2i['</s>']]:
+                words.append(i2w[i])
         return ' '.join(words)

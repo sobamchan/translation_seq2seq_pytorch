@@ -10,11 +10,11 @@ class SmallParallelEnJa:
 
     def load_dataset(self):
         if self.train:
-            src_path = os.path.join(self.data_dir, 'train.ja')
-            tgt_path = os.path.join(self.data_dir, 'train.en')
+            src_path = os.path.join(self.data_dir, 'train.en')
+            tgt_path = os.path.join(self.data_dir, 'train.ja')
         else:
-            src_path = os.path.join(self.data_dir, 'test.ja')
-            tgt_path = os.path.join(self.data_dir, 'test.en')
+            src_path = os.path.join(self.data_dir, 'test.en')
+            tgt_path = os.path.join(self.data_dir, 'test.ja')
 
         with open(src_path, 'r') as f:
             src_sents = [line.strip() for line in f.readlines()]

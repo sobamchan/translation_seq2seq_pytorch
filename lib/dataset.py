@@ -55,6 +55,6 @@ def get_dataloader(args):
                                        sampler=RandomSampler(train_dataset))
     test_dataloader = data.DataLoader(test_dataset,
                                       args.batch_size,
-                                      sampler=RandomSampler(test_dataset))
+                                      shuffle=False)
 
     return train_dataloader, test_dataloader
