@@ -42,17 +42,21 @@ def main(args):
     evaluator = Evaluator(trainer)
     for i_epoch in range(0, args.epoch + 1):
 
+        # train
         log_dict = {'i_epoch': i_epoch,
                     'train_losses': [],  # per batch
                     'test_bleus': []}   # per sample
         trainer.train_one_epoch(log_dict)
+
+        # evaluation and logging
+        logger.log('%d th epoch' % i_epoch)
         evaluator.bleu(log_dict)
         evaluator.sample_translation()
-
         log_dict_mean = {'i_epoch': log_dict['i_epoch'],
                          'train_loss': np.mean(log_dict['train_losses']),
                          'test_bleu': np.mean(log_dict['test_bleus'])}
         logger.dump(log_dict_mean)
+        logger.log('-' * 10)
 
 
 if __name__ == '__main__':
