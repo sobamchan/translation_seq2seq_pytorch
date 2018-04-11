@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from torch import LongTensor
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 
@@ -135,20 +134,14 @@ class Decoder(nn.Module):
         scores = torch.cat(decode, 1)
         return scores.view(inputs.size(0) * max_len, -1)
 
-    def decode(self, context, encoder_outputs, w2i):
-        start_decode = Variable(LongTensor([[w2i['<s>']] * 1])) \
-            .transpose(0, 1)
-        if self.args.use_cuda:
-            start_decode = start_decode.cuda()
-        embedded = self.embedding(start_decode)
-        hidden = self.init_hidden(start_decode)
+    def decode(self, inputs, context, encoder_outputs):
+        embedded = self.embedding(inputs)
+        hidden = self.init_hidden(inputs)
 
         decodes = []
         attentions = []
         decoded = embedded
         for _ in range(50):
-            # if decoded.data.tolist()[0] == w2i['</s>']:
-            #     break
             _, hidden = self.gru(torch.cat((embedded,
                                             context), 2),
                                  hidden)  # h_t = f(h_{t-1}, y_{t-1}, c)
@@ -163,4 +156,5 @@ class Decoder(nn.Module):
             context, alpha = self.calc_attention(hidden, encoder_outputs)
             attentions.append(alpha.squeeze(1))
 
-        return torch.cat(decodes).max(1)[1], torch.cat(attentions)
+        decodes = torch.cat(decodes, 1).view(inputs.size(0), 50, -1)
+        return decodes.max(2)[1], torch.cat(attentions)

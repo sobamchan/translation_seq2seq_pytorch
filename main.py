@@ -1,29 +1,11 @@
 import os
-import torch
 import argparse
 from distutils.util import strtobool
+import numpy as np
+import torch
 from lib.trainer import Trainer
-
-
-class Args:
-
-    def __init__(self):
-        self.data_dir = './small_parallel_enja'
-        self.epoch = 100
-        self.src_vocab_size = 25000
-        self.tgt_vocab_size = 25000
-        self.batch_size = 32
-        self.encoder_hidden_n = 512
-        self.encoder_layers_n = 3
-        self.encoder_embedding_dim = 512
-        self.encoder_bidirec = True
-        self.decoder_hidden_n = 512 * 2
-        self.decoder_layers_n = 3
-        self.decoder_embedding_dim = 512
-        self.dropout_p = 0.1
-        self.lr = 0.0001
-        self.use_cuda = True
-        self.gpu_id = 2
+from lib.evaluator import Evaluator
+from lib.logger import Logger
 
 
 def get_args():
@@ -31,6 +13,9 @@ def get_args():
     parser.add_argument('--data-dir',
                         type=str,
                         default='./small_parallel_enja')
+    parser.add_argument('--output-dir',
+                        type=str,
+                        default='./test')
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--batch-size', type=int, default=32)
     parser.add_argument('--lr', type=float, default=0.0001)
@@ -46,13 +31,35 @@ def get_args():
     parser.add_argument('--dropout-p', type=float, default=0.1)
     parser.add_argument('--use-cuda', type=strtobool, default='1')
     parser.add_argument('--gpu-id', type=int, default=2)
+    parser.add_argument('--seed', type=int, default=0)
     return parser.parse_args()
 
 
+def main(args):
+    logger = Logger(args.output_dir)
+    args.logger = logger
+    trainer = Trainer(args)
+    evaluator = Evaluator(trainer)
+    for i_epoch in range(0, args.epoch + 1):
+
+        log_dict = {'i_epoch': i_epoch,
+                    'train_losses': [],  # per batch
+                    'test_bleus': []}   # per sample
+        trainer.train_one_epoch(log_dict)
+        evaluator.bleu(log_dict)
+        evaluator.sample_translation()
+
+        log_dict_mean = {'i_epoch': log_dict['i_epoch'],
+                         'train_loss': np.mean(log_dict['train_losses']),
+                         'test_bleu': np.mean(log_dict['test_bleus'])}
+        logger.dump(log_dict_mean)
+
+
 if __name__ == '__main__':
-    # args = Args()
+
     args = get_args()
 
+    # GPU usage
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
     print('using GPU id: ', os.environ['CUDA_VISIBLE_DEVICES'])
     if args.use_cuda and torch.cuda.is_available():
@@ -60,10 +67,4 @@ if __name__ == '__main__':
     else:
         args.use_cuda = False
 
-    trainer = Trainer(args)
-
-    for i_epoch in range(1, args.epoch + 1):
-        loss = trainer.train_one_epoch(i_epoch)
-        print('%d th epoch: loss -> %f' % (i_epoch, loss))
-
-        trainer.test()
+    main(args)
