@@ -56,6 +56,7 @@ def main(args):
                          'train_loss': np.mean(log_dict['train_losses']),
                          'test_bleu': np.mean(log_dict['test_bleus'])}
         logger.dump(log_dict_mean)
+        trainer.save_best(log_dict_mean)
         logger.log('-' * 10)
 
 

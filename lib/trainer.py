@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 import torch.optim as optim
@@ -29,8 +30,12 @@ class Trainer:
 
         self.src_vocab = train_loader.dataset.src_vocab
         self.tgt_vocab = train_loader.dataset.tgt_vocab
+        torch.save({'src_vocab': self.src_vocab,
+                    'tgt_vocab': self.tgt_vocab},
+                   os.path.join(args.output_dir, 'vocab_objs.pth'))
 
         self.set_models()
+        self.best_valid_score = 1e-10
 
     def set_models(self):
         args = self.args
@@ -121,28 +126,14 @@ class Trainer:
             pred_sents.append(pred_sent)
         return pred_sents
 
-    def translate(self, pair):
-        src_vocab = self.src_vocab
-        tgt_vocab = self.tgt_vocab
-
-        src_sent = pair[0]
-        tgt_sent = pair[1]
-        src_sent = src_vocab.encode(src_sent)[0]
-        tgt_sent = tgt_vocab.encode(tgt_sent)[0]
-        src_sent, _, tgt_sent, _ = utils.pad_to_batch([src_sent],
-                                                      [tgt_sent],
-                                                      src_vocab.w2i['<PAD>'],
-                                                      tgt_vocab.w2i['<PAD>'])
-        src_sent = Variable(torch.LongTensor(src_sent))
-        tgt_sent = Variable(torch.LongTensor(tgt_sent))
-        if self.use_cuda:
-            src_sent = src_sent.cuda()
-            tgt_sent = tgt_sent.cuda()
-        output, hidden_c = self.encoder(src_sent, [src_sent.size(1)])
-        pred, attn = self.decoder.decode(hidden_c, output, tgt_vocab.w2i)
-
-        input_ = src_vocab.decode(src_sent.data[0])
-        pred = tgt_vocab.decode(pred.data)
-        truth = tgt_vocab.decode(tgt_sent.data[0])
-
-        return input_, pred, truth
+    def save_best(self, log_dict):
+        if log_dict['test_bleu'] > self.best_valid_score:
+            self.logger.log('saving checkpoint')
+            self.best_valid_score = log_dict['test_bleu']
+            cp = {'i_epoch': log_dict['i_epoch'],
+                  'enc_state_dict': self.encoder.state_dict(),
+                  'dec_state_dict': self.decoder.state_dict(),
+                  'enc_optim_state_dict': self.enc_optim.state_dict(),
+                  'dec_optim_state_dict': self.dec_optim.state_dict()}
+            torch.save(cp,
+                       os.path.join(self.args.output_dir, 'checkpoint.pth'))
